@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <canvas id="canvas" width="400" height="400">
+    </canvas>
+    <script>
+        var canvas = document.getElementById('canvas');
+        var c = canvas.getContext('2d');
+        /*/
+        c.fillStyle = 'black';  // 塗りつぶしの色
+        c.beginPath();
+        c.arc(200, 75, 2, 0, 2 * Math.PI, false);        
+        c.fill();// 描画
+        
+        c.strokeStyle = 'red';
+        c.beginPath();// パスの開始      
+        c.moveTo(50, 100);// 起点      
+        c.lineTo(250, 100);// 終点        
+        c.stroke();// 描画
+        /*/
+        let pointlist= [];
+        for(let i=0;i<50;i++){
+            pointlist.push([Math.random()*4,Math.random()*4])
+
+        }
+  for(let i=0;i<pointlist.length;i++) {
+			c.fillStyle = 'black';  // 塗りつぶしの色
+        c.beginPath();
+        c.arc(pointlist[i][0]*100, canvas.height-pointlist[i][1]*100, 2, 0, 2 * Math.PI, false);        
+        c.fill();// 描画
+		}
+  let list=[];//凸包点一覧
+  let miny=0;//y最小の点番号(左下)(最初の原点)
+  let maxy=0;//y最大の点番号(右上)
+  let genten=pointlist.length;//更新される原点
+  let round=true;//判定方向(trueならx正基準)
+  for(let i=0;i<pointlist.length;i++) {
+			if((pointlist[i][1]<pointlist[miny][1])||(pointlist[i][1]==pointlist[miny][1]&&pointlist[i][0]<pointlist[miny][0])) {
+				miny=i;//y最小の更新
+			}
+		}
+		for(let i=0;i<pointlist.length;i++) {
+			if((pointlist[i][1]>pointlist[maxy][1])||(pointlist[i][1]==pointlist[maxy][1]&&pointlist[i][0]>pointlist[maxy][0])) {
+				maxy=i;//y最大の更新
+			}
+		}
+  let pointdata=[];
+  for(let i=0;i<pointlist.length;i++) {
+    			pointdata.push([0,0,0,0,0]);
+		}
+  for(let i=0;i<pointlist.length;i++) {//最初の原点からの象限と傾きを求める
+			if(miny!=i) {
+				let xsa=pointlist[i][0]-pointlist[miny][0];
+				let ysa=pointlist[i][1]-pointlist[miny][1];
+				if(ysa>0) {
+					if(xsa>0) {//第1象限
+						pointdata[i][0]=1;
+						pointdata[i][1]=Math.abs(ysa/xsa);
+					}else if(xsa<0) {//第2象限
+						pointdata[i][0]=2;
+						pointdata[i][1]=Math.abs(xsa/ysa);
+					}else if(xsa==0) {
+						pointdata[i][0]=2;
+						pointdata[i][1]=0;
+					}
+				}else if(ysa<0) {
+					if(xsa<0) {//第3象限
+						pointdata[i][0]=3;
+						pointdata[i][1]=Math.abs(ysa/xsa);
+					}else if(xsa>0) {//第4象限
+						pointdata[i][0]=4;
+						pointdata[i][1]=Math.abs(xsa/ysa);
+					}else if(xsa==0) {
+						pointdata[i][0]=4;
+						pointdata[i][1]=0;
+					}
+				}else if(ysa==0) {
+					if(xsa>0) {
+						pointdata[i][0]=1;
+					    pointdata[i][1]=0;
+					}else {
+						pointdata[i][0]=3;
+					    pointdata[i][1]=0;
+					}
+				}
+			}
+			pointdata[i][4]=1;
+		}
+  let nextgenten=-1;//次の原点
+  //ellipse(200, 200, 80, 80);
+  while(genten!=miny) {//再度原点を見つけるまで
+			if(genten==pointlist.length) {
+				genten=miny;//原点の初期設定
+			}
+			list.push(genten);//リストに追加
+			c.fillStyle = 'red';  // 塗りつぶしの色
+        c.beginPath();
+        c.arc(pointlist[genten][0]*100, canvas.height-pointlist[genten][1]*100, 2, 0, 2 * Math.PI, false);        
+        c.fill();// 描画
+			let minsyougen=5;//最小象限
+			let minkatamuki=0;//最小傾き
+			for(let i=0;i<pointlist.length;i++) {//次の点を探す
+				if(round==true&&pointdata[i][4]==1&&i!=genten) {
+					let xsa=pointlist[i][0]-pointlist[genten][0];
+					let ysa=pointlist[i][1]-pointlist[genten][1];
+					if(ysa>0) {
+						if(xsa>0) {//第1象限
+							pointdata[i][2]=1;
+							pointdata[i][3]=Math.abs(ysa/xsa);
+						}else if(xsa<0) {//第2象限
+							pointdata[i][2]=2;
+							pointdata[i][3]=Math.abs(xsa/ysa);
+						}else if(xsa==0) {//π/2
+							pointdata[i][2]=2;
+							pointdata[i][3]=0;
+						}
+					}else if(ysa<0) {
+						if(xsa<0) {//第3象限
+							pointdata[i][2]=3;
+							pointdata[i][3]=Math.abs(ysa/xsa);
+						}else if(xsa>0) {//第4象限
+							pointdata[i][2]=4;
+							pointdata[i][3]=Math.abs(xsa/ysa);
+						}else if(xsa==0) {//3π/2
+							pointdata[i][2]=4;
+							pointdata[i][3]=0;
+						}
+					}else if(ysa==0) {
+						if(xsa>0) {//0
+							pointdata[i][2]=1;
+						    pointdata[i][3]=0;
+						}else {//π
+							pointdata[i][2]=3;
+						    pointdata[i][3]=0;
+						}
+					}
+					if(minsyougen>pointdata[i][2]) {//最小象限かの判断（最初は必ず通る）
+						minsyougen=pointdata[i][2];
+						minkatamuki=pointdata[i][3];
+						nextgenten=i;
+					}else if(minsyougen==pointdata[i][2]) {
+						if(minkatamuki>pointdata[i][3]) {//最小象限内での傾き比較
+							minkatamuki=pointdata[i][3];
+							nextgenten=i;
+						}else if(minkatamuki==pointdata[i][3]) {//最小象限内かつ傾き等しい時の比較
+							if(Math.abs(pointlist[nextgenten][1]-pointlist[genten][1])>Math.abs(ysa)||Math.abs(pointlist[nextgenten][0]-pointlist[genten][0])>Math.abs(xsa)) {
+								minkatamuki=pointdata[i][3];
+								nextgenten=i;
+							}
+						}
+					}
+				}
+				if(round==false&&pointdata[i][4]==1&&i!=genten) {
+					let xsa=pointlist[i][0]-pointlist[genten][0];
+					let ysa=pointlist[i][1]-pointlist[genten][1];
+					if(ysa>0) {
+						if(xsa>0) {//第1象限
+							pointdata[i][2]=3;
+							pointdata[i][3]=Math.abs(ysa/xsa);
+						}else if(xsa<0) {//第2象限
+							pointdata[i][2]=4;
+							pointdata[i][3]=Math.abs(xsa/ysa);
+						}else if(xsa==0) {
+							pointdata[i][2]=4;
+							pointdata[i][3]=0;
+						}
+					}else if(ysa<0) {
+						if(xsa<0) {//第3象限
+							pointdata[i][2]=1;
+							pointdata[i][3]=Math.abs(ysa/xsa);
+						}else if(xsa>0) {//第4象限
+							pointdata[i][2]=2;
+							pointdata[i][3]=Math.abs(xsa/ysa);
+						}else if(xsa==0) {
+							pointdata[i][2]=2;
+							pointdata[i][3]=0;
+						}
+					}else if(ysa==0) {
+						if(xsa>0) {
+							pointdata[i][2]=3;
+						    pointdata[i][3]=0;
+						}else {
+							pointdata[i][2]=1;
+						    pointdata[i][3]=0;
+						}
+					}
+					if(minsyougen>pointdata[i][2]) {
+						minsyougen=pointdata[i][2];
+						minkatamuki=pointdata[i][3];
+						nextgenten=i;
+					}else if(minsyougen==pointdata[i][2]) {
+						if(minkatamuki>pointdata[i][3]) {
+							minkatamuki=pointdata[i][3];
+							nextgenten=i;
+						}else if(minkatamuki==pointdata[i][3]) {
+							if(Math.abs(pointlist[nextgenten][1]-pointlist[genten][1])>Math.abs(ysa)||Math.abs(pointlist[nextgenten][0]-pointlist[genten][0])>Math.abs(xsa)) {
+								minkatamuki=pointdata[i][3];
+								nextgenten=i;
+							}
+						}
+					}
+				}
+			}
+			pointdata[nextgenten][4]=0;//次の原点を探索済みにする
+			for(let i=0;i<pointlist.length;i++) {//最適化(最初の原点からの傾きで判定)
+				if(i!=miny&&pointdata[i][4]==1&&(pointdata[nextgenten][0]>pointdata[i][0]||(pointdata[nextgenten][0]==pointdata[i][0]&&pointdata[nextgenten][1]>pointdata[i][1]))) {
+					pointdata[i][4]=0;
+				}
+			}
+    c.strokeStyle = 'blue';
+        c.beginPath();// パスの開始      
+        c.moveTo(pointlist[genten][0]*100, canvas.height-pointlist[genten][1]*100);// 起点      
+        c.lineTo(pointlist[nextgenten][0]*100, canvas.height-pointlist[nextgenten][1]*100);// 終点        
+        c.stroke();// 描画
+			genten=nextgenten;//原点の更新
+			if(maxy==genten) {//右上に到達したら向き変更
+				round=false;
+			}
+		}
+    </script>
+</body>
+
+</html>
